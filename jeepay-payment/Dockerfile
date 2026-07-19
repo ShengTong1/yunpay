@@ -2,8 +2,19 @@
 #   jeepay-payment（支付网关） java程序镜像构建脚本
 #
 
-# Eclipse Temurin JRE 17（openjdk 官方镜像已停止维护）
+ARG MAVEN_IMAGE=maven:3.9-eclipse-temurin-17
 ARG BASE_IMAGE=swr.cn-south-1.myhuaweicloud.com/jeepay/eclipse-temurin:17-jre
+
+# Maven 构建阶段：在 Docker 内完成 Java 编译
+FROM ${MAVEN_IMAGE} AS builder
+
+WORKDIR /workspace
+
+COPY . /workspace
+
+RUN mvn -pl jeepay-payment -am -DskipTests package
+
+# Eclipse Temurin JRE 17（openjdk 官方镜像已停止维护）
 FROM ${BASE_IMAGE}
 
 LABEL maintainer="Terrfly"
@@ -17,7 +28,7 @@ VOLUME ["/jeepayhomes/service/logs", "/jeepayhomes/service/uploads"]
 
 RUN mkdir -p /jeepayhomes/service/app
 
-COPY ./target/jeepay-payment.jar /jeepayhomes/service/app/jeepay-payment.jar
+COPY --from=builder /workspace/jeepay-payment/target/jeepay-payment.jar /jeepayhomes/service/app/jeepay-payment.jar
 
 WORKDIR /jeepayhomes/service/app
 
