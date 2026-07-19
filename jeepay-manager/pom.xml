@@ -70,6 +70,12 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- WebSocket support for the manager payment test page -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-websocket</artifactId>
+        </dependency>
+
         <!-- JWT  -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
