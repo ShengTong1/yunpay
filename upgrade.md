@@ -244,7 +244,7 @@
 3. 优化： docs/install/include/nginx.conf 补齐 X-Forwarded-Proto / Port 头，并开启 forward-headers-strategy，修 HTTPS 反代下 mixed-content 和支付回跳
 4. 优化： README 精简至约 300 行，部署文档按主题拆分至 docs/deploy/*，优先引导华为云 SWR 镜像
 5. 修复： mysql8 / redis6 容器添加 --network-alias，解决应用按 hostname 解析失败（UnknownHostException）
-6. 修复： install.sh 自动把 application.yml datasource 密码 rootroot 替换为 mysql_pwd，消除 Access denied
+6. 修复： install.sh 自动把 application.yml datasource 密码占位符替换为 mysql_pwd，消除 Access denied
 7. 修复： 移除 codegen 未用的 spring-context 依赖（消除 CVE-2024-38820 / CVE-2025-22233）
 
 [v3.2.9_20260527]

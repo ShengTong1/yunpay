@@ -1,4 +1,4 @@
-# Jeepay epay 版 — 原生支持易支付接口的开源支付系统
+# YunPay - 原生支持易支付接口的开源支付系统
 
 > 基于 [jeepay](https://github.com/jeequan/jeepay)（计全支付）二次开发，**原生支持易支付（epay）协议**，专为 [NewAPI](https://github.com/QuantumNous/new-api) 等仅支持易支付接口的系统自建支付而设计。
 >
@@ -61,8 +61,8 @@ NewAPI 全程以为自己对接的是标准易支付平台，**零代码改动**
 ### Docker Compose 部署（推荐）
 
 ```bash
-git clone https://github.com/<你的用户名>/jeepay-epay.git
-cd jeepay-epay
+git clone https://github.com/ShengTong1/yunpay.git
+cd yunpay
 
 # 按需修改配置（数据库密码等）
 cp .env.example .env
@@ -157,7 +157,7 @@ server {
 ## 目录结构
 
 ```
-jeepay-epay/
+yunpay/
 ├── jeepay-core/          # 基础工具（含 EpayKit 易支付签名、EpayMerchant 实体）
 ├── jeepay-service/       # 数据库 Service（含 EpayMerchantService）
 ├── jeepay-manager/       # 运营平台（含 EpayMerchantController、payTest、WebSocket）
