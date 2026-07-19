@@ -75,9 +75,8 @@ docker compose up -d
 |------|------|------|
 | 运营平台 | `http://<服务器IP>:9227` | 默认账号 `jeepay` / `jeepay123` |
 | 支付网关 | `http://<服务器IP>:9216` | 业务系统的易支付地址指向这里 |
-| 商户平台 | `http://<服务器IP>:9228` | 默认未启用（profiles 控制） |
 
-> merchant 服务默认不启用（`profiles: legacy-runtime/legacy-ui`），需要时 `docker compose --profile legacy-runtime up -d merchant` 启用。
+> 商户平台（端口 9228）默认不启动、不占用端口。代码保留但通过 `profiles` 控制，需要时执行 `docker compose --profile legacy-runtime up -d merchant` 启用。
 
 ### 数据库初始化
 
