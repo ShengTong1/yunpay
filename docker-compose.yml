@@ -5,20 +5,21 @@
 # 重新创建 docker compose up --force-recreate
 # 重新编译并覆盖之前的 docker compose up --build --force-recreate
 #
-# 前端目录默认使用本仓库同级的 ../jeepay-ui，可在 .env 中覆盖 UI_BASE_DIR。
+# 前端目录默认使用本仓库内的 ./jeepay-ui，可在 .env 中覆盖 UI_BASE_DIR。
 
 services:
   mysql:
+    platform: linux/amd64
     hostname: mysql
     container_name: jeepay-mysql
     restart: always
     image: ${MYSQL_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/mysql:8}
     environment:
       LANG: C.UTF-8
-      MYSQL_ROOT_PASSWORD: "rootroot"
+      MYSQL_ROOT_PASSWORD: "CHANGE_ME_MYSQL_ROOT_PWD"
       MYSQL_DATABASE: "jeepaydb"
       MYSQL_USER: "jeepay"
-      MYSQL_PASSWORD: "jeepay"
+      MYSQL_PASSWORD: "CHANGE_ME_MYSQL_PWD"
     ports:
       - "13306:3306"
     healthcheck:
@@ -26,17 +27,21 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
-      start_period: 20s
+      # 首次启动需执行 init.sql + lite.sql 建库建表，耗时较长；
+      # 宽限期给足时间，避免 manager/ui-manager 的 service_healthy 依赖误判失败。
+      start_period: 60s
     volumes:
       - mysql:/var/lib/mysql
       - ./docs/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./docs/sql/patch.sql:/docker-entrypoint-initdb.d/02-patch.sql:ro
+      - ./docs/sql/lite.sql:/docker-entrypoint-initdb.d/02-lite.sql:ro
     networks:
       jeepay:
         ipv4_address: 172.20.0.10
 
   # 使用 RocketMQ 作为默认 MQ 方案
   rocketmq-namesrv:
+    profiles:
+      - rocketmq
     platform: linux/amd64
     image: ${ROCKETMQ_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/rocketmq:5.3.1}
     hostname: rocketmq-namesrv
@@ -63,6 +68,8 @@ services:
         ipv4_address: 172.20.0.11
 
   rocketmq-broker:
+    profiles:
+      - rocketmq
     platform: linux/amd64
     image: ${ROCKETMQ_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/rocketmq:5.3.1}
     hostname: rocketmq-broker
@@ -161,12 +168,17 @@ services:
 
   payment:
     build:
-      context: ./jeepay-payment
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: jeepay-payment/Dockerfile
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9-eclipse-temurin-17}
+        BASE_IMAGE: ${JAVA_BASE_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/eclipse-temurin:17-jre}
     image: jeepay-payment:latest
     hostname: payment
     container_name: jeepay-payment
     restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -Djava.security.egd=file:/dev/./urandom"
     ports:
       - "9216:9216"
     healthcheck:
@@ -180,8 +192,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rocketmq-broker:
-        condition: service_healthy
     volumes:
       - ./logs/payment:/jeepayhomes/service/logs
       - ./conf/payment/application.yml:/jeepayhomes/service/app/application.yml
@@ -191,12 +201,19 @@ services:
 
   manager:
     build:
-      context: ./jeepay-manager
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: jeepay-manager/Dockerfile
+      args:
+        MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9-eclipse-temurin-17}
+        BASE_IMAGE: ${JAVA_BASE_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/eclipse-temurin:17-jre}
     image: jeepay-manager:latest
     hostname: manager
     container_name: jeepay-manager
     restart: always
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx192m -XX:MaxMetaspaceSize=128m -Djava.security.egd=file:/dev/./urandom"
+      JEEPAY_PAY_API_URL: ${JEEPAY_PAY_API_URL:-http://payment:9216}
+      JEEPAY_MGR_NOTIFY_URL: ${JEEPAY_MGR_NOTIFY_URL:-http://manager:9217}
     ports:
       - "9217:9217"
     healthcheck:
@@ -210,8 +227,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rocketmq-broker:
-        condition: service_healthy
     volumes:
       - ./logs/manager:/jeepayhomes/service/logs
       - ./conf/manager/application.yml:/jeepayhomes/service/app/application.yml
@@ -220,6 +235,9 @@ services:
         ipv4_address: 172.20.0.22
 
   merchant:
+    profiles:
+      - legacy-runtime
+      - legacy-ui
     build:
       context: ./jeepay-merchant
       dockerfile: Dockerfile
@@ -240,8 +258,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      rocketmq-broker:
-        condition: service_healthy
     volumes:
       - ./logs/merchant:/jeepayhomes/service/logs
       - ./conf/merchant/application.yml:/jeepayhomes/service/app/application.yml
@@ -250,11 +266,15 @@ services:
         ipv4_address: 172.20.0.23
 
   ui-payment:
+    profiles:
+      - legacy-ui
     build:
-      context: ${UI_BASE_DIR:-..}/jeepay-ui
+      context: ${UI_BASE_DIR:-.}/jeepay-ui
       dockerfile: Dockerfile
       args:
         PLATFORM: cashier
+        NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
     image: jeepay-ui-payment:latest
     hostname: payment-ui
     container_name: jeepay-ui-payment
@@ -272,10 +292,12 @@ services:
 
   ui-manager:
     build:
-      context: ${UI_BASE_DIR:-..}/jeepay-ui
+      context: ${UI_BASE_DIR:-.}/jeepay-ui
       dockerfile: Dockerfile
       args:
         PLATFORM: manager
+        NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
     image: jeepay-ui-manager:latest
     hostname: manager-ui
     container_name: jeepay-ui-manager
@@ -292,11 +314,15 @@ services:
         ipv4_address: 172.20.0.32
 
   ui-merchant:
+    profiles:
+      - legacy-ui
     build:
-      context: ${UI_BASE_DIR:-..}/jeepay-ui
+      context: ${UI_BASE_DIR:-.}/jeepay-ui
       dockerfile: Dockerfile
       args:
         PLATFORM: merchant
+        NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
     image: jeepay-ui-merchant:latest
     hostname: merchant-ui
     container_name: jeepay-ui-merchant

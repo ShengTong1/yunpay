@@ -632,14 +632,14 @@ echo "[5] Done. "
 cd $rootDir/service/configs/ && cp -r $rootDir/sources/jeepay/conf/* .
 require_ok $? "复制 service/configs/*（来源：\$rootDir/sources/jeepay/conf）"
 
-# 把 conf 模板里的 Docker Compose 默认密码 rootroot 替换为本次安装实际使用的
+# 把 conf 模板里的 Docker Compose 默认密码 CHANGE_ME_MYSQL_ROOT_PWD 替换为本次安装实际使用的
 # mysql_pwd，保证 manager / merchant / payment 能连上脚本初始化的 MySQL。
 # 仅替换 datasource 段的密码（Redis password 为空，activemq 密码 "manager"，不受影响）。
 # 同时校验 yml 为真实文件，拦截"历史遗留空目录"导致 docker run -v 挂载异常。
 for svc in manager merchant payment; do
     svcYml="$rootDir/service/configs/$svc/application.yml"
     assert_regular_file "$svcYml" "jeepay-$svc 配置 application.yml"
-    sed -i "s|password: rootroot|password: $mysql_pwd|g" "$svcYml"
+    sed -i "s|password: CHANGE_ME_MYSQL_ROOT_PWD|password: $mysql_pwd|g" "$svcYml"
 done
 
 

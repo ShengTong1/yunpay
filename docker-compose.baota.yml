@@ -72,16 +72,16 @@ services:
         cp -n /tmp/jeepay-src/conf/merchant/application.yml           /jeepayhomes/jeepayConfigs/service/merchant/application.yml  || true
         cp -n /tmp/jeepay-src/conf/payment/application.yml            /jeepayhomes/jeepayConfigs/service/payment/application.yml   || true
 
-        # 上游 conf/*/application.yml 里 datasource 密码是占位 "rootroot"（和仓库
+        # 上游 conf/*/application.yml 里 datasource 密码是占位 "CHANGE_ME_MYSQL_ROOT_PWD"（和仓库
         # docker-compose.yml 的默认 MYSQL_ROOT_PASSWORD 一致），宝塔场景下 MySQL
         # 初始化密码由 MYSQL_ROOT_PASSWORD 变量控制（默认 jeepaydb123456），不改
-        # 则 Access denied。用 grep 条件做幂等替换，只有还存在 "password: rootroot"
+        # 则 Access denied。用 grep 条件做幂等替换，只有还存在 "password: CHANGE_ME_MYSQL_ROOT_PWD"
         # 才改，尊重用户后续自定义。$$ 是给 compose 的转义，防止 compose YAML 解析
         # 时把 shell 变量吞掉。
         for svc in manager merchant payment; do
             yml="/jeepayhomes/jeepayConfigs/service/$$svc/application.yml"
-            if [ -f "$$yml" ] && grep -q "password: rootroot" "$$yml"; then
-                sed -i "s|password: rootroot|password: $${MYSQL_ROOT_PASSWORD}|g" "$$yml"
+            if [ -f "$$yml" ] && grep -q "password: CHANGE_ME_MYSQL_ROOT_PWD" "$$yml"; then
+                sed -i "s|password: CHANGE_ME_MYSQL_ROOT_PWD|password: $${MYSQL_ROOT_PASSWORD}|g" "$$yml"
                 echo "$$yml: datasource password rewrote"
             fi
         done
