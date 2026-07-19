@@ -37,7 +37,7 @@ spring:
     # yml填写url连接串， 无需将&符号进行转义
     url: jdbc:mysql://mysql:3306/jeepaydb?zeroDateTimeBehavior=convertToNull&useUnicode=true&characterEncoding=utf-8&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
     username: root
-    password: rootroot
+    password: CHANGE_ME_MYSQL_ROOT_PWD
     druid:
       # 连接池配置项
       initial-size: 5 #初始化时建立物理连接的个数
@@ -153,12 +153,12 @@ isys:
       access-key-secret: SECRET_SECRET_SECRET  #AccessKeySecret
 
   mq:
-    vender: rocketMQ  #  切换MQ厂商， 支持：【 activeMQ  rabbitMQ  rocketMQ  aliYunRocketMQ 】， 需正确配置 【对应的yml参数】 和 【jeepay-components-mq项目下pom.xml中的依赖包】。
+    vender: dbQueue  #  自用Lite版：使用数据库任务扫描 + 本地轻量发送器，无需启动 RocketMQ。
 
-rocketmq:
-  name-server: rocketmq-namesrv:9876
-  producer:
-    group: PID_JEEPAY_MERCHANT
-    send-message-timeout: 10000
-    retry-times-when-send-failed: 2
-    retry-times-when-send-async-failed: 2
+#rocketmq:
+#  name-server: rocketmq-namesrv:9876
+#  producer:
+#    group: PID_JEEPAY_MERCHANT
+#    send-message-timeout: 10000
+#    retry-times-when-send-failed: 2
+#    retry-times-when-send-async-failed: 2

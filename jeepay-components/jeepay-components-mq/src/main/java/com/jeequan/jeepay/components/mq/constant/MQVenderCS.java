@@ -30,5 +30,6 @@ public class MQVenderCS {
     public static final String RABBIT_MQ = "rabbitMQ";
     public static final String ROCKET_MQ = "rocketMQ";
     public static final String ALIYUN_ROCKET_MQ = "aliYunRocketMQ";
+    public static final String DB_QUEUE = "dbQueue";
 
 }
