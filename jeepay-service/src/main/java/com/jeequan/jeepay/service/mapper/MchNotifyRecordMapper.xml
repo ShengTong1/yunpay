@@ -38,7 +38,9 @@
     <!-- 更改为通知中 & 增加允许重发通知次数  -->
     <update id="updateIngAndAddNotifyCountLimit">
         update t_mch_notify_record
-        set notify_count_limit = notify_count_limit + 1, state = 1
+        set notify_count_limit = notify_count_limit + 1,
+            state = 1,
+            last_notify_time = null
         where notify_id = #{notifyId}
     </update>
 

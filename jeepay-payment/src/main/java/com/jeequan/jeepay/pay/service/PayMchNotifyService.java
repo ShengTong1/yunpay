@@ -22,6 +22,7 @@ import com.jeequan.jeepay.core.entity.MchNotifyRecord;
 import com.jeequan.jeepay.core.entity.PayOrder;
 import com.jeequan.jeepay.core.entity.RefundOrder;
 import com.jeequan.jeepay.core.entity.TransferOrder;
+import com.jeequan.jeepay.core.utils.EpayKit;
 import com.jeequan.jeepay.core.utils.JeepayKit;
 import com.jeequan.jeepay.core.utils.StringKit;
 import com.jeequan.jeepay.pay.rqrs.payorder.QueryPayOrderRS;
@@ -208,6 +209,13 @@ public class PayMchNotifyService {
      */
     public String createNotifyUrl(PayOrder payOrder, String appSecret) {
 
+        // 易支付订单：按易支付协议构造通知参数与签名，转发给外部系统的 notify_url
+        // extParam 中含 {"epay":true,"pid":...,"epayKey":...,"epayType":...,"epayName":...,"epayNotifyUrl":...}
+        JSONObject epayExt = parseEpayExt(payOrder.getExtParam());
+        if (epayExt != null) {
+            return buildEpayNotifyUrl(payOrder, epayExt);
+        }
+
         QueryPayOrderRS queryPayOrderRS = QueryPayOrderRS.buildByPayOrder(payOrder);
         JSONObject jsonObject = (JSONObject)JSONObject.toJSON(queryPayOrderRS);
         jsonObject.put("reqTime", System.currentTimeMillis()); //添加请求时间
@@ -217,6 +225,63 @@ public class PayMchNotifyService {
 
         // 生成通知
         return StringKit.appendUrlQuery(payOrder.getNotifyUrl(), jsonObject);
+    }
+
+    /**
+     * 解析订单 extParam，若为易支付订单则返回扩展 JSON，否则返回 null。
+     */
+    private JSONObject parseEpayExt(String extParam) {
+        if (StringUtils.isEmpty(extParam)) {
+            return null;
+        }
+        try {
+            JSONObject obj = JSONObject.parseObject(extParam);
+            if (obj != null && Boolean.TRUE.equals(obj.getBoolean("epay"))) {
+                return obj;
+            }
+        } catch (Exception e) {
+            log.warn("解析 extParam 失败：{}", extParam, e);
+        }
+        return null;
+    }
+
+    /**
+     * 构造易支付格式的异步通知 URL。
+     * 参数：pid, trade_no, out_trade_no, type, name, money, trade_status, sign, sign_type
+     * 通知目标地址取自 extParam.epayNotifyUrl（即 new-api 下单时传入的 notify_url）。
+     */
+    private String buildEpayNotifyUrl(PayOrder payOrder, JSONObject epayExt) {
+
+        String epayNotifyUrl = epayExt.getString("epayNotifyUrl");
+        String epayKey = epayExt.getString("epayKey");
+        String pid = epayExt.getString("pid");
+        String type = epayExt.getString("epayType");
+        String name = epayExt.getString("epayName");
+
+        // trade_status：TRADE_SUCCESS=支付成功，TRADE_CLOSED=交易关闭，WAIT_BUYER_PAY=等待支付
+        // 仅订单终态（成功/失败/关闭）才会进入通知，成功用 TRADE_SUCCESS，其余用 TRADE_CLOSED。
+        String tradeStatus = (payOrder.getState() == PayOrder.STATE_SUCCESS)
+                ? "TRADE_SUCCESS" : "TRADE_CLOSED";
+
+        // 金额：分 → 元（保留两位）
+        String money = String.format("%.2f", payOrder.getAmount() / 100.0);
+
+        // 易支付通知参数（顺序无关，签名时按字典序排序）
+        JSONObject params = new JSONObject(true);
+        params.put("pid", pid);
+        params.put("trade_no", payOrder.getPayOrderId());       // 易支付平台订单号 → Jeepay 订单号
+        params.put("out_trade_no", payOrder.getMchOrderNo());   // 商户订单号
+        params.put("type", type);
+        params.put("name", name);
+        params.put("money", money);
+        params.put("trade_status", tradeStatus);
+        params.put("sign_type", EpayKit.SIGN_TYPE);
+
+        // 易支付签名（独立算法）
+        params.put("sign", EpayKit.getSign(params, epayKey));
+
+        log.info("易支付通知构造：payOrderId={}, notifyUrl={}, tradeStatus={}", payOrder.getPayOrderId(), epayNotifyUrl, tradeStatus);
+        return StringKit.appendUrlQuery(epayNotifyUrl, params);
     }
 
 
