@@ -12,6 +12,9 @@ WORKDIR /workspace
 
 COPY . /workspace
 
+# 配置 Maven 阿里云镜像源，加速国内依赖下载
+RUN mkdir -p /root/.m2 && printf '<settings>\n  <mirrors>\n    <mirror>\n      <id>aliyun</id>\n      <mirrorOf>central</mirrorOf>\n      <url>https://maven.aliyun.com/repository/public</url>\n    </mirror>\n  </mirrors>\n</settings>\n' > /root/.m2/settings.xml
+
 RUN mvn -pl jeepay-payment -am -DskipTests package
 
 # Eclipse Temurin JRE 17（openjdk 官方镜像已停止维护）
