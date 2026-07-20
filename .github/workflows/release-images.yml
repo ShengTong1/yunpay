@@ -10,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}  # ShengTong1/yunpay
 
 jobs:
   build-images:
@@ -22,6 +21,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: 镜像前缀转小写（GHCR 要求 repository name 全小写）
+        id: prefix
+        run: echo "image_prefix=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU（多架构支持）
         uses: docker/setup-qemu-action@v3
@@ -50,8 +53,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-payment:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-payment:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.image_prefix }}-payment:latest
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.image_prefix }}-payment:${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -63,8 +66,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-manager:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-manager:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.image_prefix }}-manager:latest
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.image_prefix }}-manager:${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -77,7 +80,7 @@ jobs:
           push: true
           build-args: PLATFORM=manager
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ui-manager:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-ui-manager:${{ steps.meta.outputs.version }}
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.image_prefix }}-ui-manager:latest
+            ${{ env.REGISTRY }}/${{ steps.prefix.outputs.image_prefix }}-ui-manager:${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
