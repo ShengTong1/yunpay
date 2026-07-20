@@ -173,7 +173,7 @@ services:
       args:
         MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9-eclipse-temurin-17}
         BASE_IMAGE: ${JAVA_BASE_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/eclipse-temurin:17-jre}
-    image: jeepay-payment:latest
+    image: ${IMAGE_PREFIX:-ghcr.io/shengtong1/yunpay}-payment:${IMAGE_TAG:-latest}
     hostname: payment
     container_name: jeepay-payment
     restart: always
@@ -206,7 +206,7 @@ services:
       args:
         MAVEN_IMAGE: ${MAVEN_IMAGE:-maven:3.9-eclipse-temurin-17}
         BASE_IMAGE: ${JAVA_BASE_IMAGE:-swr.cn-south-1.myhuaweicloud.com/jeepay/eclipse-temurin:17-jre}
-    image: jeepay-manager:latest
+    image: ${IMAGE_PREFIX:-ghcr.io/shengtong1/yunpay}-manager:${IMAGE_TAG:-latest}
     hostname: manager
     container_name: jeepay-manager
     restart: always
@@ -298,7 +298,7 @@ services:
         PLATFORM: manager
         NODE_IMAGE: ${NODE_IMAGE:-node:20-alpine}
         NGINX_IMAGE: ${NGINX_IMAGE:-nginx:alpine}
-    image: jeepay-ui-manager:latest
+    image: ${IMAGE_PREFIX:-ghcr.io/shengtong1/yunpay}-ui-manager:${IMAGE_TAG:-latest}
     hostname: manager-ui
     container_name: jeepay-ui-manager
     restart: always

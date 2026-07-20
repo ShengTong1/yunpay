@@ -55,18 +55,37 @@
 
 ## 快速开始
 
-### Docker Compose 部署（推荐）
+### 方式一：拉取预构建镜像（推荐，低配服务器适用）
+
+镜像已通过 GitHub Actions 构建并发布到 GHCR，服务器无需编译，直接拉取运行。适合 1核2G 等低配服务器。
 
 ```bash
 git clone https://github.com/ShengTong1/yunpay.git
 cd yunpay
 
-# 按需修改配置（数据库密码等）
+# 修改配置（数据库密码等）
 cp .env.example .env
 nano .env
 
-# 一键启动（首次会自动执行 init.sql + lite.sql 建库建表，耗时较长）
+# 拉取镜像并启动（首次会自动执行 init.sql + lite.sql 建库建表）
 docker compose up -d
+```
+
+默认 `IMAGE_PREFIX=ghcr.io/shengtong1/yunpay`，`docker compose up` 会自动拉取 GHCR 上的预构建镜像，**无需本地编译**。
+
+### 方式二：本地编译（开发者/无法访问 GHCR 时）
+
+改了代码或无法访问 GHCR 时，可让 compose 现场构建镜像。需服务器内存 ≥ 2G。
+
+```bash
+git clone https://github.com/ShengTong1/yunpay.git
+cd yunpay
+cp .env.example .env
+
+# 把 IMAGE_PREFIX 改成本地名（或注释掉），compose 将自动用 build 段构建
+nano .env   # 设 IMAGE_PREFIX=yunpay 或注释该行
+
+docker compose up -d --build
 ```
 
 启动完成后访问：
